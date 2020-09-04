@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using CLP = CommandLineParser;
@@ -42,6 +44,61 @@ namespace Media_Rename
             foreach (var rename in renames)
             {
                 Console.WriteLine($"{rename.Key}: {rename["Source"]} --> {rename["Destination"]}");
+                foreach (var file in GetMediaFiles(rename["Source"]))
+                {
+                    Console.WriteLine($"    {file}");
+                }
+            }
+        }
+
+        static readonly string[] MEDIA_FILES = new[] {
+            ".3gp",
+            ".ass",
+            ".avi",
+            ".bmp",
+            ".fla",
+            ".flv",
+            ".gif",
+            ".idx",
+            ".jpeg",
+            ".jpg",
+            ".m4a",
+            ".m4v",
+            ".mka",
+            ".mkv",
+            ".mov",
+            ".mp4",
+            ".mpa",
+            ".mpeg",
+            ".mpg",
+            ".ogg",
+            ".ogm",
+            ".png",
+            ".srt",
+            ".sub",
+            ".ts",
+            ".webm",
+            ".webp",
+            ".wma",
+            ".wmv",
+            ".wtv",
+        };
+
+        static IEnumerable<string> GetMediaFiles(string path)
+        {
+            foreach (var file in Directory.GetFiles(path))
+            {
+                if (MEDIA_FILES.Contains(Path.GetExtension(file).ToLowerInvariant()))
+                {
+                    yield return Path.Combine(path, file);
+                }
+            }
+            foreach (var dir in Directory.GetDirectories(path))
+            {
+                foreach (var file in GetMediaFiles(Path.Combine(path, dir)))
+                {
+                    yield return file;
+                }
             }
         }
     }
