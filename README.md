@@ -1,2 +1,3 @@
-# media-rename
-Command-line tool for organising media files
+# Media Rename
+
+Command-line tool for organising media files.
