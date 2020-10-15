@@ -1,8 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Media_Rename.DataProviders;
 using Microsoft.Extensions.Configuration;
 using CLP = CommandLineParser;
 
@@ -12,7 +14,7 @@ namespace Media_Rename
     {
         static readonly XDG.XDG XDG = new XDG.XDG("Media Rename");
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             var config = new CLP.Arguments.FileArgument('c', "config")
             {
@@ -30,10 +32,9 @@ namespace Media_Rename
             {
                 commandLineParser.ParseCommandLine(args);
 
-                Main(new ConfigurationBuilder()
+                await Process(new ConfigurationBuilder()
                     .AddJsonFile(config.Value.FullName, true)
-                    .Build())
-                    .Wait();
+                    .Build());
             }
             catch (CLP.Exceptions.CommandLineException e)
             {
@@ -41,19 +42,28 @@ namespace Media_Rename
             }
         }
 
-        static async Task Main(IConfigurationRoot config)
+        static async Task Process(IConfigurationRoot config)
         {
-            Console.WriteLine($"Config: {XDG.GetConfig()}");
-            Console.WriteLine($"Cache:  {XDG.GetCache()}");
-            Console.WriteLine($"Data:   {XDG.GetData()}");
-
             var renames = config.GetSection("Rename").GetChildren();
             foreach (var rename in renames)
             {
                 Console.WriteLine($"{rename.Key}: {rename["Source"]} --> {rename["Destination"]}");
+
+                var dataProviders = new IDataProvider[]
+                {
+                    new FromFile() { XDG = XDG, Config = rename.GetSection("FromFile"), },
+                    new FromFilename() { XDG = XDG, Config = rename.GetSection("FromFilename"), },
+                };
+
                 foreach (var file in GetMediaFiles(rename["Source"]))
                 {
+                    var data = ImmutableDictionary<string, string>.Empty.Add("filepath", file);
                     Console.WriteLine($"    {file}");
+                    foreach (var provider in dataProviders)
+                        data = data.Concat(await provider.Process(data)).ToImmutableDictionary();
+                    foreach (var kvp in data)
+                        Console.WriteLine($"        {kvp.Key} = {kvp.Value}");
+                    Console.WriteLine();
                 }
             }
         }

@@ -12,24 +12,29 @@ namespace XDG
 
         public XDG(string application)
         {
-            // Canonicalise the application name to match the OS conventions
+            Application = application;
+        }
+
+        public string GetConfig(params string[] path) => FormatPath(Path.Combine(new[] { GetConfigHome(), Application }.Concat(path).ToArray()));
+        public string GetCache(params string[] path) => FormatPath(Path.Combine(new[] { GetCacheHome(), Application }.Concat(path).ToArray()));
+        public string GetData(params string[] path) => FormatPath(Path.Combine(new[] { GetDataHome(), Application }.Concat(path).ToArray()));
+
+        static readonly Regex WordStart = new Regex("(?<!\\.)\\b[a-zA-Z]");
+
+        static string FormatPath(string path)
+        {
+            // Canonicalise the path to match the OS conventions
             // Windows: Title Case
             // Linux: kebab-case
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                Application = WordStart.Replace(application.Replace('-', ' '), match => match.Value.ToUpperInvariant());
+                return WordStart.Replace(path.Replace('-', ' '), match => match.Value.ToUpperInvariant());
             }
             else
             {
-                Application = WordStart.Replace(application, match => match.Value.ToLowerInvariant()).Replace(' ', '-');
+                return WordStart.Replace(path, match => match.Value.ToLowerInvariant()).Replace(' ', '-');
             }
         }
-
-        public string GetConfig() => Path.Combine(GetConfigHome(), Application);
-        public string GetCache() => Path.Combine(GetCacheHome(), Application);
-        public string GetData() => Path.Combine(GetDataHome(), Application);
-
-        static readonly Regex WordStart = new Regex("\\b[a-zA-Z]");
 
         static string GetConfigHome()
         {
