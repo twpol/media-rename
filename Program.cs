@@ -10,6 +10,8 @@ namespace Media_Rename
 {
     class Program
     {
+        static readonly XDG.XDG XDG = new XDG.XDG("Media Rename");
+
         static void Main(string[] args)
         {
             var config = new CLP.Arguments.FileArgument('c', "config")
@@ -38,8 +40,13 @@ namespace Media_Rename
                 Console.WriteLine(e.Message);
             }
         }
+
         static async Task Main(IConfigurationRoot config)
         {
+            Console.WriteLine($"Config: {XDG.GetConfig()}");
+            Console.WriteLine($"Cache:  {XDG.GetCache()}");
+            Console.WriteLine($"Data:   {XDG.GetData()}");
+
             var renames = config.GetSection("Rename").GetChildren();
             foreach (var rename in renames)
             {
